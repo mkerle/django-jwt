@@ -10,7 +10,7 @@ Assumes that `python` is python3.
 3. `$ pip install Authlib`
 4. `$ pip install django-cors-headers`
 5. `$ pip install cryptography`
-6. `$ pip install python-ldap 
+6. `$ pip install python-ldap`
 7. `$ git clone https://github.com/mkerle/django-jwt`
 8. `$ python manage.py runserver 9000`
 
@@ -22,7 +22,7 @@ Assumes that `python` is python3.
 4. [Authlib][authlib-home]
 5. [Django CORS][django-cors-headers]
 6. [Python Cryptography][python-cryptography]
-7. [Python LDAP][https://www.python-ldap.org/en/python-ldap-3.3.0/index.html]
+7. [Python LDAP][python-ldap]
 
 
 [django-home]: https://www.djangoproject.com/
@@ -31,3 +31,4 @@ Assumes that `python` is python3.
 [authlib-home]: https://docs.authlib.org/en/latest/
 [django-cors-headers]: https://github.com/adamchainz/django-cors-headers
 [python-cryptography]: https://cryptography.io/en/latest/
+[python-ldap]: https://www.python-ldap.org/en/python-ldap-3.3.0/index.html
