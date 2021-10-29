@@ -11,16 +11,31 @@ import datetime
 import ldap
 
 LDAP_SERVER_IP = '10.1.1.250'
-LDAP_SERVER_PORT = '389gi'
+LDAP_SERVER_PORT = '389'
 LDAP_TLS_ENABLE = False
 LDAP_TLS_CERT_PATH = 'jwtauth/ad-pub.crt'
 LDAP_BASE_DN = 'cn=users,dc=mitch,dc=local'
+LDAP_BIND_DN = 'svc_ldap_bind_acc'
+LDAP_BIND_PASSWORD = 'Password1'
 
 JWT_ISSUER = 'jwt.mitch.local'
 JWT_DEFAULT_EXPIRY = 60     # seconds
 JWT_PRIVATE_KEY_PATH = 'jwtauth/key.pem'
 JWT_PRIVATE_KEY_PASSWORD = 'Password1'      # retrieve from keyring or at least obfuscate
-JWT_PUBLIC_KEY_PATH = 'jwtauth/pubkey.pem'
+JWT_PUBLIC_KEY_PATH = 'jwtauth/mypubkey.pem'
+
+def getPublicKey(request):
+
+    pubKey = getJWTPublicKey(JWT_PUBLIC_KEY_PATH).public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
+    return JsonResponse({'publicKeyBytes' : pubKey.decode('utf-8')})
+
+def getJWTPublicKey(jwtPublicKeyPath):
+    with open(jwtPublicKeyPath, "rb") as key_file:
+        public_key = serialization.load_pem_public_key(
+            key_file.read()
+        )
+
+    return public_key
 
 
 @ensure_csrf_cookie
@@ -82,12 +97,15 @@ def ldapAuthenticate(ldapSearchResult):
     if (ldapSearchResult is not None):
         if (len(ldapSearchResult) == 1):
             if (ldapSearchResult[0][1]):
-                if ('memberOf' in ldapSearchResult[0][1]):
-                    return True
+                return True
 
     return False
 
+def getUserDN(userData):
 
+    dn = ''
+    if (userData and len(userData) == 1 and userData[0][1] and 'distinguishedName' in userData[0][1]):
+        return userData[0][1]['distinguishedName'][0].decode('utf-8')
 
 def ldapSearchUser(user, password):
 
@@ -103,9 +121,16 @@ def ldapSearchUser(user, password):
             con.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
             con.start_tls_s()
 
-        con.simple_bind_s(user, password)
+        con.simple_bind_s(LDAP_BIND_DN, LDAP_BIND_PASSWORD)
 
-        return con.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, u'(cn=' + user + ')')
+        userLDAPData = con.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, u'(sAMAccountName=' + user + ')')
+        con.unbind_s()
+
+        # bind using user DN and password - if wrong will throw exception
+        userDN = getUserDN(userLDAPData)
+        con = ldap.initialize(constr, bytes_mode=False)
+        con.simple_bind_s(userDN, password)
+
+        return userLDAPData
     except:
-        print('shat itself...')
         return None
